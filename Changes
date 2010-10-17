@@ -1,5 +1,15 @@
 Revision history for WWW-Disqus-API
 
-0.01    Date/time
-        First version, released on an unsuspecting world.
+0.03    2010-10-17
+        By <blabos at cpan.org>:
+            Correction of the list of methods and a few more
+            bells and whistles
+
+0.02    2010-10-16
+        By <garu at cpan.org>:
+            Complete refactoring
+
+0.01    2010-10-16
+        By <blabos at cpan.org>:
+            First approach to encapsulate the API
 

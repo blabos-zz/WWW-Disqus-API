@@ -1,13 +1,37 @@
 package WWW::Disqus::API;
 
-use warnings;
 use strict;
+use warnings;
 
 use Carp;
 use LWP::UserAgent;
 use JSON;
 
-use Data::Dumper;
+
+our $AUTOLOAD;
+
+
+my %methods = (
+    'get_user_name'                 =>'post',
+    'get_forum_api_key'             =>'get',
+    'get_forum_list'                =>'get',
+    'get_forum_posts'               =>'get',
+    'get_num_posts'                 =>'get',
+    'get_categories_list'           =>'get',
+    'get_thread_list'               =>'get',
+    'get_updated_threads'           =>'get',
+    'get_thread_posts'              =>'get',
+    'thread_by_identifier'          =>'post',
+    'get_thread_by_url'             =>'get',
+    'update_thread'                 =>'post',
+    'create_post'                   =>'post',
+    'moderate_post'                 =>'post',
+    'get_recent_forums_comments'    =>'get',
+    'get_user_comments'             =>'get',
+    'get_user_info'                 =>'get',
+    'get_most_commented_threads'    =>'get',
+    'get_threads_by_identifiers'    =>'get',
+);
 
 =head1 NAME
 
@@ -15,11 +39,11 @@ WWW::Disqus::API - The great new WWW::Disqus::API!
 
 =head1 VERSION
 
-Version 0.01
+Version 0.03
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = 0.03;
 
 
 =head1 SYNOPSIS
@@ -45,402 +69,59 @@ if you don't export anything, such as for a purely object-oriented module.
 =cut
 
 sub new {
-    my $class   = shift;
-    my $args    = shift;
-    my $attr    = {
+    my ( $class, $arg_ref ) = (@_);
+
+    my $self = {
+        'lwp'           => LWP::UserAgent->new,
         'disqus_root'   => 'http://disqus.com/api/',
         'api_version'   => '1.1',
+        'user_api_key'  => $arg_ref->{'user_api_key'}
+          || croak 'you must provide a User API key',
     };
-    
-    croak 'You must provide a User API key'
-        unless defined $args->{'user_api_key'};
-    
-    $attr->{'user_api_key'} = $args->{'user_api_key'};
-    
-    $attr->{'lwp'} = LWP::UserAgent->new;
-    
-    return bless $attr, $class;
+
+    return bless $self, ref $class || $class;
 }
 
 
-=head2 get_user_name
+sub AUTOLOAD {
+    my ( $method, $self, %params ) = ( $AUTOLOAD, @_ );
+    $method =~ s/.*:://;
+    return if $method eq 'DESTROY';
 
-Validate API key and get username.
+    my $action = $methods{$method}
+      or croak "Method '$method' not supported";
 
-=cut
-
-sub get_user_name {
-    my $self = shift;
-    
-    my $res = $self->_call_method_via_post(_method_name());
-    
-    return _decode_response($res);  
-}
-
-
-=head2 get_forum_list
-
-Get a list of websites that user owns or moderates.
-
-=cut
-
-sub get_forum_list {
-    my $self = shift;
-    
-    my $res = $self->_call_method_via_get(_method_name());
-    
-    return _decode_response($res);
-}
-
-
-=head2 get_forum_api_key
-
-Get a forum API key for a specific forum.
-
-=cut
-
-sub get_forum_api_key {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_get(_method_name(), %params);
-    
-    return _decode_response($res);
-}
-
-
-=head2 get_forum_posts
-
-Get a list of comments on a website.
-
-=cut
-
-sub get_forum_posts {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_get(_method_name(), %params);
-    
-    return _decode_response($res);
-}
-
-
-=head2 get_thread_list
-
-Get a list of threads on a website.
-
-=cut
-
-sub get_thread_list {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_get(_method_name(), %params);
-    
-    return _decode_response($res);
-}
-
-
-=head2 get_categories_list
-
-Get a list of categories on a website.
-
-=cut
-
-sub get_categories_list {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_get(_method_name(), %params);
-    
-    return _decode_response($res);
-}
-
-
-=head2 get_num_posts
-
-Count a number of comments in articles.
-
-=cut
-
-sub get_num_posts {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_get(_method_name(), %params);
-    
-    return _decode_response($res);
-}
-
-
-=head2 get_updated_threads
-
-Get a list of threads with new comments.
-
-=cut
-
-sub get_updated_threads {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_get(_method_name(), %params);
-    
-    return _decode_response($res);
-}
-
-
-=head2 get_thread_posts
-
-Get a list of comments in a thread.
-
-=cut
-
-sub get_thread_posts {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_get(_method_name(), %params);
-    
-    return _decode_response($res);
-}
-
-
-=head2 thread_by_identifier
-
-Get or create thread by identifier.
-
-=cut
-
-sub thread_by_identifier {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_post(_method_name(), %params);
-    
-    return _decode_response($res);
-}
-
-
-=head2 get_thread_by_url
-
-Get thread by URL.
-
-=cut
-
-sub get_thread_by_url {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_get(_method_name(), %params);
-    
-    print Dumper $res;
-    
-    return _decode_response($res);
-}
-
-
-=head2 update_thread
-
-Update thread.
-
-=cut
-
-sub update_thread {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_post(_method_name(), %params);
-    
-    return _decode_response($res);
-}
-
-
-=head2 create_post
-
-Create a new post (i.e. add a new comment).
-
-=cut
-
-sub create_post {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_post(_method_name(), %params);
-    
-    return _decode_response($res);
-}
-
-
-=head2 get_recent_forums_comments
-
-Get recent comments from all forums associated with a partner account.
-Not Tested. Required Partner API key not found.
-
-=cut
-
-sub get_recent_forums_comments {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_get(_method_name(), %params);
-    
-    print Dumper $res;
-    
-    return _decode_response($res);
-}
-
-
-=head2 get_user_comments
-
-Get a list of user comments.
-Not Tested. Required Partner API key not found.
-
-=cut
-
-sub get_user_comments {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_get(_method_name(), %params);
-    
-    print Dumper $res;
-    
-    return _decode_response($res);
-}
-
-
-=head2 get_user_info
-
-Get basic information about a user.
-Not Tested. Required Partner API key not found.
-
-=cut
-
-sub get_user_info {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_get(_method_name(), %params);
-    
-    print Dumper $res;
-    
-    return _decode_response($res);
-}
-
-
-=head2 get_most_commented_threads
-
-Return threads that have received the most comments in the past N days.
-Not Tested. Required Partner API key not found.
-
-=cut
-
-sub get_most_commented_threads {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_get(_method_name(), %params);
-    
-    print Dumper $res;
-    
-    return _decode_response($res);
-}
-
-
-=head2 get_threads_by_identifiers
-
-Return threads by their identifiers.
-Not Tested. Required Partner API key not found.
-
-=cut
-
-sub get_threads_by_identifiers {
-    my ($self, %params) = @_;
-    
-    my $res = $self->_call_method_via_get(_method_name(), %params);
-    
-    print Dumper $res;
-    
-    return _decode_response($res);
-}
-
-
-
-=head2 _method_name
-
-Returns the current method name.
-
-=cut
-
-sub _method_name {
-    return (split "::", (caller(1))[3])[-1];
-}
-
-
-=head2 _call_method_via_get
-
-Calls a API method using a GET request.
-
-=cut
-
-sub _call_method_via_get {
-    my ($self, $method, %params) = @_;
-    
     my $url = $self->{'disqus_root'} . $method . '/';
-    
-    $self->_append_required_info(\%params);
-    
-    return $self->{'lwp'}->get($url . '?' . _query_string(%params));
+
+    # append required info to %params
+    @params{qw(user_api_key api_version)}
+      = @$self{qw(user_api_key api_version)};
+
+    my $res = $self->$action( $url, %params );
+
+    return decode_json( $res->content );
 }
 
 
-=head2 _call_method_via_post
+sub get {
+    my ( $self, $url, %params ) = @_;
+    my $query_string = join '&', map { $_ . '=' . $params{$_} } keys %params;
 
-Calls a API method using a POST request.
-
-=cut
-
-sub _call_method_via_post {
-    
-    my ($self, $method, %params) = @_;
-    
-    my $url = $self->{'disqus_root'} . $method . '/';
-    
-    $self->_append_required_info(\%params);
-    
-    return $self->{'lwp'}->post($url, \%params);
-}
-
-=head2 _decode_response
-
-Decodes the JSON response, or throws an exception.
-
-=cut
-
-sub _decode_response {
-    my $res = shift;
-    
-    my $json_str = $res->content;
-    
-    return decode_json($json_str);
+    return $self->{'lwp'}->get( $url . '?' . $query_string );
 }
 
 
-=head2 _query_string
+sub post {
+    my ( $self, $url, %params ) = @_;
 
-Returns a QUERY STRING from the supplied parameters.
-
-=cut
-
-sub _query_string {
-    my %args = @_;
-    
-    return join '&', map {$_ . '=' . $args{$_}} keys %args;
+    return $self->{'lwp'}->post( $url, \%params );
 }
 
 
-=head2 _append_required_info
-
-Appends information that is always required to parameter list.
-
-=cut
-
-sub _append_required_info {
-    my ($self, $params) = @_;
-    
-    $params->{'user_api_key'} = $self->{'user_api_key'};
-    $params->{'api_version'}  = $self->{'api_version'};
-}
-
-
-=head1 AUTHOR
+=head1 AUTHORS
 
 Blabos de Blebe, C<< <blabos at cpan.org> >>
+Breno G. de Oliveira C<< <garu at cpan.org> >>
 
 =head1 BUGS
 
@@ -497,4 +178,4 @@ See http://dev.perl.org/licenses/ for more information.
 
 =cut
 
-1; # End of WWW::Disqus::API
+42; # End of WWW::Disqus::API
